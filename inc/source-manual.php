@@ -2,7 +2,7 @@
 
 use Elementor\Controls_Manager;
 use Elementor\Repeater; 
-use Elementor\Widget_Base; // FIX: Added use statement for Widget_Base to resolve compatibility error
+use Elementor\Widget_Base; 
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -22,7 +22,7 @@ class DPDFG_Source_Manual extends DPDFG_Abstract_Source {
         return true; // Always active
     }
 
-    public function register_controls( Widget_Base $widget ) {
+    public function register_controls( \Elementor\Widget_Base $widget ) {
         $repeater = new Repeater();
 
         // Repeater Field: Admin Title (for display in editor)
@@ -47,20 +47,6 @@ class DPDFG_Source_Manual extends DPDFG_Abstract_Source {
                 'default' => [
                     'url' => '',
                 ],
-            ]
-        );
-        
-        // Repeater Field: Expiry Date
-        $repeater->add_control(
-            'expiry_date',
-            [
-                'label' => esc_html__( 'Expiry Date (Optional)', 'dynamic-pdf-gallery' ),
-                'type' => Controls_Manager::DATE_TIME,
-                'picker_options' => [
-                    'dateFormat' => 'Y-m-d',
-                    'enableTime' => false,
-                ],
-                'description' => esc_html__( 'If set, the document will automatically disappear after this date.', 'dynamic-pdf-gallery' ),
             ]
         );
         
@@ -111,23 +97,18 @@ class DPDFG_Source_Manual extends DPDFG_Abstract_Source {
         if ( is_array( $pdf_list ) ) {
             foreach ( $pdf_list as $item ) {
                 $pdf_url = ! empty( $item['pdf_file_item']['url'] ) ? $item['pdf_file_item']['url'] : '';
-                $expiry_date_str = ! empty( $item['expiry_date'] ) ? $item['expiry_date'] : null;
-
-                // 1. Check Expiry Date
-                if ( $expiry_date_str ) {
-                    $current_date = new DateTime( current_time( 'mysql' ) );
-                    $expiry_date = DateTime::createFromFormat( 'Y-m-d H:i:s', $expiry_date_str . ' 23:59:59' ); 
-
-                    if ( $current_date > $expiry_date ) {
-                        continue; // Skip rendering expired item
-                    }
-                }
 
                 if ( empty( $pdf_url ) || ! str_ends_with( strtolower( $pdf_url ), '.pdf' ) ) {
                     continue; 
                 }
                 
                 $attachment_id = attachment_url_to_postid( $pdf_url );
+
+                // FIX: Check for expiration using the global helper function
+                if ( $attachment_id && function_exists('dpdfg_is_pdf_expired') && dpdfg_is_pdf_expired( $attachment_id ) ) {
+                    continue; // Skip rendering expired item
+                }
+                
                 $link_text = get_the_title( $attachment_id );
                 
                 if ( empty( $link_text ) ) {
@@ -137,6 +118,7 @@ class DPDFG_Source_Manual extends DPDFG_Abstract_Source {
                 $items_to_render[] = [
                     'pdf_url' => $pdf_url,
                     'link_text' => $link_text,
+                    'attachment_id' => $attachment_id, // Add ID for other potential uses
                 ];
             }
         }
