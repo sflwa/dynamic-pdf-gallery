@@ -1,6 +1,5 @@
 <?php
 
-use Elementor\Widget_Base;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography; 
 use Elementor\Group_Control_Border;
@@ -9,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class DPDFG_Elementor_Widget extends Widget_Base {
+class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
 
     // Storage for instantiated source classes
     private $sources = [];
@@ -20,11 +19,12 @@ class DPDFG_Elementor_Widget extends Widget_Base {
     public function __construct( $data = [], $args = null ) {
         parent::__construct( $data, $args );
 
-        // Instantiate all potential source classes
+        // FIX: Removed $this->get_settings() from the constructor arguments 
+        // to avoid the fatal error during Elementor initialization.
         $this->sources = [
-            'manual' => new DPDFG_Source_Manual( $this, $this->get_settings() ),
-            'filebird_folder' => new DPDFG_Source_FileBird( $this, $this->get_settings() ),
-            'wpmf_folder' => new DPDFG_Source_WPMF( $this, $this->get_settings() ),
+            'manual' => new DPDFG_Source_Manual( $this ),
+            'filebird_folder' => new DPDFG_Source_FileBird( $this ),
+            'wpmf_folder' => new DPDFG_Source_WPMF( $this ),
         ];
     }
 
@@ -267,8 +267,9 @@ class DPDFG_Elementor_Widget extends Widget_Base {
         if ( isset( $this->sources[$source_type] ) && $this->sources[$source_type]->is_active() ) {
             
             // Re-instantiate the source with current settings for fresh data pull
-            $source_class = get_class($this->sources[$source_type]);
-            $source = new $source_class( $this, $settings );
+            $source = $this->sources[$source_type];
+            // FIX: Set the current settings on the source instance before fetching data.
+            $source->set_settings( $settings ); 
             $items_to_render = $source->fetch_pdfs();
 
         } else if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
