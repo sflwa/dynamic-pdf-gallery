@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Dynamic PDF Gallery
- * Plugin URI: hhttps://github.com/sflwa/dynamic-pdf-gallery/
+ * Plugin URI: https://github.com/sflwa/dynamic-pdf-gallery/
  * Description: An Elementor widget to display a dynamic, multi-column gallery of PDF links from the WordPress Media Library, supporting popular folder plugins like FileBird and WP Media Folder.
  * Version: 2.1.0
  * Author: South Florida Web Advisors
