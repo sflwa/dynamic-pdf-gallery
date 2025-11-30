@@ -12,10 +12,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 abstract class DPDFG_Abstract_Source {
     
     protected $widget;
-    protected $settings;
+    protected $settings = []; // FIX: Initialize settings to an empty array.
 
-    public function __construct( $widget, $settings ) {
+    // FIX: Removed $settings from the constructor.
+    public function __construct( $widget ) {
         $this->widget = $widget;
+    }
+    
+    /**
+     * FIX: Added a method to set the settings after the widget is fully initialized.
+     * @param array $settings The widget settings.
+     */
+    public function set_settings( $settings ) {
         $this->settings = $settings;
     }
 
