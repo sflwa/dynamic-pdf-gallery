@@ -36,11 +36,13 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
             foreach ($terms as $term) {
                 $folders[$term->term_id] = $term->name;
             }
+            // Sort folders alphabetically
+            asort($folders);
         }
         return $folders;
     }
 
-    public function register_controls( Widget_Base $widget ) {
+    public function register_controls( \Elementor\Widget_Base $widget ) {
         $wpmf_folders = $this->get_wpmf_folders();
         
         $widget->add_control(
@@ -122,11 +124,18 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
 
         $results = $wpdb->get_results( $query );
 
-        if ( $results ) {
+        // FIX: Check for expiration before rendering
+        if ( $results && function_exists('dpdfg_is_pdf_expired') ) {
             foreach ( $results as $post ) {
+                
+                if ( dpdfg_is_pdf_expired( $post->ID ) ) {
+                    continue; // Skip expired item
+                }
+                
                 $items_to_render[] = [
                     'pdf_url' => $post->guid,
                     'link_text' => get_the_title( $post->ID ),
+                    'attachment_id' => $post->ID, // Add ID for other potential uses
                 ];
             }
         }
