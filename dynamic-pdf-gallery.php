@@ -23,6 +23,7 @@ require_once( DPDFG_PATH . 'inc/abstract-pdf-source.php' );
 require_once( DPDFG_PATH . 'inc/source-manual.php' );
 require_once( DPDFG_PATH . 'inc/source-filebird.php' );
 require_once( DPDFG_PATH . 'inc/source-wpmf.php' );
+require_once( DPDFG_PATH . 'inc/pdf-meta-fields.php' );
 
 
 /**
