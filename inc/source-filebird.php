@@ -21,7 +21,8 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
         if ( ! function_exists( 'is_plugin_active' ) ) {
             include_once( ABSPATH . 'wp-admin/includes/plugin.php' ); 
         }
-        return is_plugin_active( 'filebird/filebird.php' );
+        // FIX: Check for both free and pro versions of FileBird
+        return is_plugin_active( 'filebird/filebird.php' ) || is_plugin_active( 'filebird-pro/filebird.php' );
     }
     
     private function get_filebird_folders() {
@@ -114,7 +115,7 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
 
         $results = $wpdb->get_results( $query );
         
-        // FIX: Check for expiration before rendering
+        // Check for expiration before rendering
         if ( $results && function_exists('dpdfg_is_pdf_expired') ) {
             foreach ( $results as $post ) {
                 
