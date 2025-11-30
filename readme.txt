@@ -2,13 +2,13 @@
 Contributors: sflwa
 Tags: elementor, pdf, gallery, media folder
 Requires at least: 5.0 
-Tested up to: 6.4 
-Requires PHP: 7.4 
+Tested up to: 6.8 
+Requires PHP: 8.2
 Stable tag: 2.1.0 
 License: GPLv2 or later 
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-An Elementor widget to display a dynamic, multi-column gallery of PDF links. Supports fetching PDFs based on folder organization from plugins like FileBird and WP Media Folder, and includes a media library field for file expiration.
+An Elementor widget for dynamic PDF galleries, supporting FileBird/WPMF folders and a Media Library expiration date/time field.
 
 == Description ==
 
