@@ -1,13 +1,12 @@
 <?php
 /**
  * Plugin Name: Dynamic PDF Gallery
- * Plugin URI: https://example.com/dynamic-pdf-gallery
+ * Plugin URI: hhttps://github.com/sflwa/dynamic-pdf-gallery/
  * Description: An Elementor widget to display a dynamic, multi-column gallery of PDF links from the WordPress Media Library, supporting popular folder plugins like FileBird and WP Media Folder.
  * Version: 2.1.0
- * Author: Gemini
- * Author URI: https://gemini.google.com
- * License: GPL2
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Author: South Florida Web Advisors
+ * Author URI:  https://sflwa.net
+ * License: GPLv2 or later
  * Text Domain: dynamic-pdf-gallery
  */
 
@@ -24,7 +23,6 @@ require_once( DPDFG_PATH . 'inc/source-manual.php' );
 require_once( DPDFG_PATH . 'inc/source-filebird.php' );
 require_once( DPDFG_PATH . 'inc/source-wpmf.php' );
 require_once( DPDFG_PATH . 'inc/pdf-meta-fields.php' );
-
 
 /**
  * Initialize the Elementor widget.
