@@ -19,8 +19,7 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
     public function __construct( $data = [], $args = null ) {
         parent::__construct( $data, $args );
 
-        // FIX: Removed $this->get_settings() from the constructor arguments 
-        // to avoid the fatal error during Elementor initialization.
+        // Instantiate all potential source classes
         $this->sources = [
             'manual' => new DPDFG_Source_Manual( $this ),
             'filebird_folder' => new DPDFG_Source_FileBird( $this ),
@@ -98,6 +97,7 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
         // --- CONTENT TAB: Source-Specific Controls ---
         foreach ($this->sources as $source) {
             if ($source->is_active()) {
+                // translators: %s: The label of the PDF source (e.g., 'FileBird Folder', 'WP Media Folder')
                 $this->start_controls_section(
                     'source_section_' . $source->get_name(),
                     [
@@ -240,12 +240,15 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
                 esc_html( $link_text )
             );
         } else {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $link_text is already escaped via get_the_title() or esc_html__().
             $link_content = esc_html( $link_text );
         }
         
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $index is an integer, safe for output.
         printf( '<div class="pdf-item-container pdf-item-%d" style="text-align: center;">', $index );
 
         printf(
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $link_content is built with escaped values.
             '<a href="%s" target="_blank" rel="noopener noreferrer" class="pdf-link-anchor" style="display: inline-flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">%s</a>',
             esc_url( $pdf_url ),
             $link_content 
@@ -268,12 +271,11 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
             
             // Re-instantiate the source with current settings for fresh data pull
             $source = $this->sources[$source_type];
-            // FIX: Set the current settings on the source instance before fetching data.
             $source->set_settings( $settings ); 
             $items_to_render = $source->fetch_pdfs();
 
         } else if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
-             // Fallback message for editor if the selected plugin is not active
+             // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping is handled by esc_html__().
              echo '<div style="background-color: #ffe0e0; padding: 10px; border: 1px solid #ff4d4d;">' . esc_html__( 'Error: The selected PDF source plugin is not active or invalid.', 'dynamic-pdf-gallery' ) . '</div>';
              return;
         }
@@ -282,6 +284,7 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
         if ( empty( $items_to_render ) ) {
             if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
                 $message = esc_html__( 'No PDFs found matching the criteria.', 'dynamic-pdf-gallery' );
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping is handled by esc_html__().
                 echo '<div style="background-color: #ffe0e0; padding: 10px; border: 1px solid #ff4d4d;">' . $message . '</div>';
             }
             return;
@@ -289,6 +292,7 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
 
         $this->add_render_attribute( 'wrapper', 'class', 'canvas-pdf-embedder-wrapper' );
         
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping is handled by $this->get_render_attribute_string().
         echo '<div ' . $this->get_render_attribute_string( 'wrapper' ) . '>';
         
         foreach ( $items_to_render as $index => $item ) {
@@ -351,23 +355,15 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
                         var expiryDate = item.expiry_date;
                         var isExpired = false;
                         
-                        if ( expiryDate ) {
-                            // JS check for editor preview
-                            var expiryTimestamp = Date.parse( expiryDate.replace( /-/g, '/' ) );
-                            var currentTimestamp = new Date().getTime();
-
-                            if ( currentTimestamp > expiryTimestamp ) {
-                                isExpired = true;
-                                expiredCount++;
-                            }
-                        }
+                        // NOTE: Client-side preview cannot accurately check server-side meta expiration.
+                        // This preview logic is for manual repeater items, which are no longer used for expiry.
 
                         if ( pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf') ) {
                             #>
                             <div class="pdf-item-container" style="margin-bottom: 30px; text-align: center; opacity: {{ isExpired ? 0.4 : 1 }};">
                                 <p class="pdf-link-container">
                                     <span style="display: block; font-weight: bold;">{{ linkText }}</span>
-                                    <small>({{ isExpired ? 'EXPIRED - HIDDEN ON FRONT-END' : 'Link to PDF' }})</small>
+                                    <small>(Link to PDF)</small>
                                 </p>
                             </div>
                             <#
@@ -380,13 +376,6 @@ class DPDFG_Elementor_Widget extends \Elementor\Widget_Base {
                         }
                     } );
                     
-                    if ( expiredCount > 0 ) {
-                        #>
-                        <div style="background-color: #ffccbc; padding: 10px; margin-top: 15px; border: 1px solid #e53935; text-align: center;">
-                            <?php echo esc_html__( 'NOTE: ', 'dynamic-pdf-gallery' ); ?> {{ expiredCount }} <?php echo esc_html__( 'item(s) are expired and will not display on the front-end.', 'dynamic-pdf-gallery' ); ?>
-                        </div>
-                        <#
-                    }
                 } else {
                     #>
                     <div style="background-color: #ffe0e0; padding: 10px; border: 1px solid #ff4d4d;">
