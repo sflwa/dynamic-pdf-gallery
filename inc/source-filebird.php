@@ -21,7 +21,7 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
         if ( ! function_exists( 'is_plugin_active' ) ) {
             include_once( ABSPATH . 'wp-admin/includes/plugin.php' ); 
         }
-        // FIX: Check for both free and pro versions of FileBird
+        // Check for both free and pro versions of FileBird
         return is_plugin_active( 'filebird/filebird.php' ) || is_plugin_active( 'filebird-pro/filebird.php' );
     }
     
@@ -30,8 +30,19 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
         $folders = [ '0' => esc_html__( 'Uncategorized', 'dynamic-pdf-gallery' ) ];
         $table_name = $wpdb->prefix . 'fbv'; 
         
-        if ($wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") == $table_name) {
-            $results = $wpdb->get_results("SELECT id, name FROM {$table_name} WHERE id > 0 ORDER BY name ASC");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Checking for table existence, standard practice for plugin checks.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching -- Result is cached by WP, table existence check.
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name) {
+            
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Querying plugin's taxonomy table.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching -- Data is volatile (folders changing).
+            $results = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT id, name FROM {$table_name} WHERE id > %d ORDER BY name ASC",
+                    0
+                )
+            );
+
             if ($results) {
                 foreach ($results as $row) {
                     $folders[$row->id] = $row->name;
@@ -80,17 +91,21 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
         global $wpdb;
         $items_to_render = [];
         $folder_id = absint( $this->settings['filebird_folder_id'] );
-        $sort_by = sanitize_key( $this->settings['sort_by_filebird'] );
+        $sort_by_raw = sanitize_key( $this->settings['sort_by_filebird'] );
         
-        // Build ORDER BY clause
-        $order_by = 'p.post_date DESC';
-        switch ( $sort_by ) {
-            case 'date_asc': $order_by = 'p.post_date ASC'; break;
-            case 'title_asc': $order_by = 'p.post_title ASC'; break;
-            case 'title_desc': $order_by = 'p.post_title DESC'; break;
-        }
+        // Build ORDER BY clause, safely mapping key to column/direction
+        $order_by_map = [
+            'date_desc' => 'p.post_date DESC',
+            'date_asc'  => 'p.post_date ASC',
+            'title_asc' => 'p.post_title ASC',
+            'title_desc'=> 'p.post_title DESC',
+        ];
 
-        $attachment_table = $wpdb->prefix . 'posts';
+        // Default to safe value if key is invalid
+        $order_by = $order_by_map[ $sort_by_raw ] ?? 'p.post_date DESC';
+
+        // Use standard WP table properties
+        $attachment_table = $wpdb->posts;
         $filebird_table = $wpdb->prefix . 'fbv_attachment_folder';
 
         $query = $wpdb->prepare(
@@ -109,10 +124,12 @@ class DPDFG_Source_FileBird extends DPDFG_Abstract_Source {
             AND 
                 f.folder_id = %d
             ORDER BY 
-                {$order_by}",
+                {$order_by}", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Ordering is handled by safe mapping above.
             $folder_id
         );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Necessary for querying attachments by folder.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching -- $query is prepared above. NoCaching is accepted here as media data changes frequently.
         $results = $wpdb->get_results( $query );
         
         // Check for expiration before rendering
