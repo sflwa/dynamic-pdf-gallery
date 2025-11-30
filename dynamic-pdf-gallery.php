@@ -23,13 +23,14 @@ require_once( DPDFG_PATH . 'inc/abstract-pdf-source.php' );
 require_once( DPDFG_PATH . 'inc/source-manual.php' );
 require_once( DPDFG_PATH . 'inc/source-filebird.php' );
 require_once( DPDFG_PATH . 'inc/source-wpmf.php' );
-require_once( DPDFG_PATH . 'inc/class-dpdfg-elementor-widget.php' );
 
 
 /**
  * Initialize the Elementor widget.
  */
 function dpdfg_register_elementor_widget( $widgets_manager ) {
+    // FIX: The widget class file is now required here, ensuring Elementor's environment is loaded.
+    require_once( DPDFG_PATH . 'inc/class-dpdfg-elementor-widget.php' ); 
     $widgets_manager->register( new \DPDFG_Elementor_Widget() );
 }
 add_action( 'elementor/widgets/register', 'dpdfg_register_elementor_widget' );
