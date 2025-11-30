@@ -25,6 +25,8 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
     }
     
     private function get_wpmf_folders() {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Safe use of WP function.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching -- Relying on WP cache group for terms.
         $folders = [ '0' => esc_html__( 'Uncategorized', 'dynamic-pdf-gallery' ) ];
         
         $terms = get_terms([
@@ -81,19 +83,25 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
         global $wpdb;
         $items_to_render = [];
         $folder_id = absint( $this->settings['wpmf_folder_id'] );
-        $sort_by = sanitize_key( $this->settings['sort_by_wpmf'] );
+        $sort_by_raw = sanitize_key( $this->settings['sort_by_wpmf'] );
         
-        // Build ORDER BY clause
-        $order_by = 'p.post_date DESC';
-        switch ( $sort_by ) {
-            case 'date_asc': $order_by = 'p.post_date ASC'; break;
-            case 'title_asc': $order_by = 'p.post_title ASC'; break;
-            case 'title_desc': $order_by = 'p.post_title DESC'; break;
-        }
+        // Build ORDER BY clause, safely mapping key to column/direction
+        $order_by_map = [
+            'date_desc' => 'p.post_date DESC',
+            'date_asc'  => 'p.post_date ASC',
+            'title_asc' => 'p.post_title ASC',
+            'title_desc'=> 'p.post_title DESC',
+        ];
 
-        $attachment_table = $wpdb->prefix . 'posts';
-        $relationships_table = $wpdb->prefix . 'term_relationships';
+        // Default to safe value if key is invalid
+        $order_by = $order_by_map[ $sort_by_raw ] ?? 'p.post_date DESC';
+
+
+        // Note: Table names are trusted since they use $wpdb->prefix.
+        $attachment_table = $wpdb->posts;
+        $relationships_table = $wpdb->term_relationships;
         $taxonomy = 'wpmf-category';
+        $term_taxonomy_table = $wpdb->term_taxonomy;
 
         $query = $wpdb->prepare(
             "SELECT 
@@ -105,7 +113,7 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
             ON 
                 p.ID = tr.object_id
             INNER JOIN 
-                {$wpdb->prefix}term_taxonomy AS tt 
+                {$term_taxonomy_table} AS tt 
             ON 
                 tr.term_taxonomy_id = tt.term_taxonomy_id
             WHERE 
@@ -117,14 +125,16 @@ class DPDFG_Source_WPMF extends DPDFG_Abstract_Source {
             AND 
                 tt.term_id = %d
             ORDER BY 
-                {$order_by}",
+                {$order_by}", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Ordering is handled by safe mapping above.
             $taxonomy,
             $folder_id
         );
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Necessary for querying attachments by folder.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching -- $query is prepared above. NoCaching is accepted here as media data changes frequently.
         $results = $wpdb->get_results( $query );
 
-        // FIX: Check for expiration before rendering
+        // Check for expiration before rendering
         if ( $results && function_exists('dpdfg_is_pdf_expired') ) {
             foreach ( $results as $post ) {
                 
